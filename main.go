@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -25,15 +26,23 @@ import (
 var ConfigFilePath string
 var VERBOSE int
 
+// Just an io.ReadCloser with a name for filling in HTTP forms.
 type NamedStream struct {
 	io.ReadCloser
 	name string
 }
-type ResponseHandlerFetcher func(L *lua.State) error
+
+// These functions should push the HTTP response handler
+// to the top of the provided Lua state's stack.
+type ResponseHandlerPusher func(L *lua.State) error
+
+// This should hold the data needed for workers to make a request and parse the response.
 type UploadJob struct {
 	request        *http.Request
-	pushResHandler ResponseHandlerFetcher
+	pushResHandler ResponseHandlerPusher
 }
+
+// Each worker is responsible for its own lua state and HTTP client.
 type Worker struct {
 	L          *lua.State
 	httpClient *http.Client
@@ -48,8 +57,8 @@ func newWorker() (*Worker, error) {
 		L:          L,
 		httpClient: &http.Client{},
 	}, nil
-
 }
+
 func (worker *Worker) Close() {
 	worker.L.Close()
 	worker.httpClient.CloseIdleConnections()
@@ -60,20 +69,36 @@ func prependError(err error, prefixes ...string) error {
 }
 
 func main() {
-	var err error
-	ConfigFilePath, err = xdg.SearchConfigFile("gsharer/main.lua")
+	ConfigFilePath, err := xdg.SearchConfigFile("gsharer/main.lua")
 	if err != nil {
 		log.Fatal(err)
 	}
+	gsLogger := slog.New(GsharerLogHandler{})
+	slog.SetDefault(gsLogger)
 	app := &cli.App{
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "verbose",
 				Aliases: []string{"V"},
-				Value:   0,
-				Usage:   "where to upload to",
+				Value:   2,
+				Usage:   "Sets the log level: 0=ERROR, 1=WARN, 2=INFO, 3+=DEBUG",
 				EnvVars: []string{"GSHARER_VERBOSE"},
 			},
+		},
+		Before: func(ctx *cli.Context) error {
+			switch verbosity := ctx.Int("verbose"); {
+			case verbosity == 0:
+				slog.SetLogLoggerLevel(slog.LevelDebug)
+			case verbosity == 1:
+				slog.SetLogLoggerLevel(slog.LevelWarn)
+			case verbosity == 2:
+				slog.SetLogLoggerLevel(slog.LevelInfo)
+			case verbosity >= 3:
+				slog.SetLogLoggerLevel(slog.LevelDebug)
+			default:
+				return errors.New(fmt.Sprintf("Invalid log level set, was %v, only 0 or more accepted", verbosity))
+			}
+			return nil
 		},
 		Commands: []*cli.Command{
 			{
@@ -159,12 +184,10 @@ func main() {
 
 						// create workers to do upload jobs
 						maxThreads := min(len(uploadJobs), cCtx.Int("threads"))
-
 						queue := make(chan *UploadJob)
 						wg := &sync.WaitGroup{}
 						defer wg.Wait()
 
-						// spawn workers
 						for i := range maxThreads {
 							wg.Add(1)
 							go func() error {
@@ -189,6 +212,7 @@ func main() {
 							}()
 						}
 
+						// push the jobs into the queue and close it for the workers
 						for _, job := range uploadJobs {
 							queue <- job
 						}
@@ -200,7 +224,6 @@ func main() {
 						if destination == "" {
 							return errors.New("When uploading from stdin, a filename needs to be specified.")
 						}
-						log.Println("No files given, reading from stdin")
 						worker, err := newWorker()
 						if err != nil {
 							return err
@@ -229,7 +252,7 @@ func main() {
 				Name:  "sync",
 				Usage: "sync with a server",
 				Action: func(cCtx *cli.Context) error {
-					log.Println("Not functional, but u can look at this progress bar!")
+					slog.Error("Not functional, but u can look at this progress bar!")
 					bar := progressbar.Default(100)
 					for i := 0; i < 100; i++ {
 						bar.Add(1)
@@ -240,6 +263,14 @@ func main() {
 			{
 				Name:  "config",
 				Usage: "print config file location",
+				Action: func(cCtx *cli.Context) error {
+					fmt.Println(ConfigFilePath)
+					return nil
+				},
+			},
+			{
+				Name:  "auth",
+				Usage: "authenticates to a supported OAUTH provider",
 				Action: func(cCtx *cli.Context) error {
 					fmt.Println(ConfigFilePath)
 					return nil
