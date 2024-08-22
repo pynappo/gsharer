@@ -18,8 +18,7 @@
 local function convert_from_sxcu(json_str)
 	local table = {
 		request = {},
-		options = {},
-		response = {},
+		response = function(response_str) end,
 	}
 	local sxcu_table = gsharer.json.decode(json_str)
 	return lua_table

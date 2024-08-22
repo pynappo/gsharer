@@ -434,6 +434,10 @@ func (worker *Worker) ParseResponse(response *http.Response, pushResHandler func
 	if err != nil {
 		return "", err
 	}
+	if response.StatusCode >= 300 {
+		return "", errors.New(fmt.Sprintf("Response did not respond with a good code: %v", response))
+	}
+
 	defer response.Body.Close()
 	if pushResHandler == nil {
 		pushResHandler = func(L *lua.State) error {
