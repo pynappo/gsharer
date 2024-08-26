@@ -364,7 +364,7 @@ func CreateJob(L *lua.State, destination string, streams []NamedStream) (job *Up
 	if err != nil {
 		return
 	}
-	reqType, err := nestedGet(reqParams, []string{"type"}, "POST")
+	reqMethod, err := nestedGet(reqParams, []string{"method"}, "POST")
 	if err != nil {
 		return
 	}
@@ -403,7 +403,7 @@ func CreateJob(L *lua.State, destination string, streams []NamedStream) (job *Up
 	if err = writer.Close(); err != nil {
 		return
 	}
-	job.request, err = http.NewRequest(reqType, reqURL, body)
+	job.request, err = http.NewRequest(reqMethod, reqURL, body)
 	if err != nil {
 		return
 	}

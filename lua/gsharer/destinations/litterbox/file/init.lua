@@ -1,7 +1,7 @@
 return {
 	name = "litterbox.catbox.moe",
 	request = {
-		type = "POST",
+		method = "POST",
 		URL = "https://litterbox.catbox.moe/resources/internals/api.php",
 		file_form_name = "fileToUpload",
 		arguments = {

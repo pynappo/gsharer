@@ -31,3 +31,15 @@ function gsharer.option(name)
 	local option = os.getenv(name) or _G[name]
 	return option
 end
+
+function gsharer.gsplit(s, delimiter)
+	return (s .. delimiter):gmatch("(.-)" .. delimiter)
+end
+
+function gsharer.split(s, delimiter)
+	local result = {}
+	for match in gsharer.gsplit(s, delimiter) do
+		table.insert(result, match)
+	end
+	return result
+end

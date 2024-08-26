@@ -1,7 +1,7 @@
 return {
 	name = "catbox.moe",
 	request = {
-		type = "POST",
+		method = "POST",
 		URL = "https://catbox.moe/user/api.php",
 		file_form_name = "fileToUpload",
 		arguments = {

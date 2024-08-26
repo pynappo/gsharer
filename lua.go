@@ -59,7 +59,7 @@ func initLuaState() (*lua.State, error) {
 	L.SetTable(-3)
 
 	// setup gsharer global w/ utils and such
-	err = doEmbeddedFile(L, "lua/gsharer/load_globals.lua")
+	err = doEmbeddedFile(L, "lua/gsharer/globals.lua")
 	if err != nil {
 		return nil, err
 	}

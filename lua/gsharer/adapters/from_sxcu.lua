@@ -1,3 +1,4 @@
+local M = {}
 -- {
 --   "Version": "14.1.0",
 --   "DestinationType": "ImageUploader",
@@ -15,11 +16,20 @@
 --   "DeletionURL": "{json:delete_url}",
 --   "ErrorMessage": "{json:status_txt}"
 -- }
-local function convert_from_sxcu(json_str)
-	local table = {
-		request = {},
+local function convert_field(str) end
+function M.convert(sxcu, name)
+	local json = gsharer.json.decode(sxcu)
+	local destination = {
+		name = name,
+		request = {
+			method = json["RequestMethod"],
+			URL = json["RequestURL"],
+			arguments = json["Arguments"],
+			file_form_name = json["FileFormName"],
+		},
 		response = function(response_str) end,
 	}
-	local sxcu_table = gsharer.json.decode(json_str)
+	destination.request.arguments = json["Arguments"]
 	return lua_table
 end
+return M
