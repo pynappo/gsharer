@@ -88,7 +88,7 @@ func main() {
 		Before: func(ctx *cli.Context) error {
 			switch verbosity := ctx.Int("verbose"); {
 			case verbosity == 0:
-				slog.SetLogLoggerLevel(slog.LevelDebug)
+				slog.SetLogLoggerLevel(slog.LevelError)
 			case verbosity == 1:
 				slog.SetLogLoggerLevel(slog.LevelWarn)
 			case verbosity == 2:
