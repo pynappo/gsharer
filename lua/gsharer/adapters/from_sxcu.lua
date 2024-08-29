@@ -16,9 +16,14 @@ local M = {}
 --   "DeletionURL": "{json:delete_url}",
 --   "ErrorMessage": "{json:status_txt}"
 -- }
-local function convert_field(str) end
+local function convert_to_parser(str) end
+
+---@param sxcu string sxcu file contents (json)
+---@param name string the name of the resulting destination
+---@return gsharer.Destination
 function M.convert(sxcu, name)
 	local json = gsharer.json.decode(sxcu)
+	---@type gsharer.Destination
 	local destination = {
 		name = name,
 		request = {
@@ -29,7 +34,6 @@ function M.convert(sxcu, name)
 		},
 		response = function(response_str) end,
 	}
-	destination.request.arguments = json["Arguments"]
-	return lua_table
+	return destination
 end
 return M

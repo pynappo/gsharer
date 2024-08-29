@@ -1,4 +1,5 @@
 ---@meta
+---@class gsharer
 gsharer = {}
 gsharer.json = {}
 
@@ -16,3 +17,39 @@ function gsharer.json.encode(obj) end
 ---@param options table|nil The options as defined in https://github.com/kikito/inspect.lua/blob/8686162bce74913c4d3a577e7324642ddc4e21c0/inspect.lua#L338
 ---@return string
 function gsharer.inspect(root, options) end
+
+--- @see |gsharer.inspect()|
+--- @param ... any
+--- @return any # given arguments.
+function gsharer.print(...) end
+
+--- Gets an option from environment variables or from a lua global.
+--- @param name string
+--- @return string|nil
+function gsharer.option(name) end
+
+---@class gsharer.Request
+---@field method "POST"|"GET"|"PUT"
+---@field URL string
+---@field file_form_name string
+---@field arguments {[string]: string|nil}
+local Request = {
+	method = "POST",
+	URL = "https://example.com",
+	file_form_name = "fileToUpload",
+	arguments = {
+		userhash = gsharer.option("CATBOX_USERHASH"),
+		reqtype = "fileupload",
+	},
+}
+---@class gsharer.Destination
+---@field name string The name of the destination, for logging purposes
+---@field request gsharer.Request The name of the destination, for logging purposes
+---@field response fun(body: string, headers: { [string]: string }):string
+local Destination = {
+	name = "name",
+	request = {},
+	response = function(body, headers)
+		return body
+	end,
+}
