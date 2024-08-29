@@ -40,7 +40,7 @@ func (h GsharerLogHandler) Handle(context context.Context, record slog.Record) e
 	case slog.LevelWarn:
 		fallthrough
 	case slog.LevelError:
-		fmt.Fprintf(os.Stderr, "[%v]", record.Level, message)
+		fmt.Fprintf(os.Stderr, "[%v] %v", record.Level, message)
 	default:
 		panic("unreachable")
 	}

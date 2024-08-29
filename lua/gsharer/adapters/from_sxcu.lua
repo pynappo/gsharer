@@ -32,7 +32,9 @@ function M.convert(sxcu, name)
 			arguments = json["Arguments"],
 			file_form_name = json["FileFormName"],
 		},
-		response = function(response_str) end,
+		response = function(body)
+			return body
+		end,
 	}
 	return destination
 end
