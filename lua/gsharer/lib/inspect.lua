@@ -328,7 +328,6 @@ function Inspector:putValue(v)
 end
 
 --
---
 function inspect.inspect(root, options)
 	options = options or {}
 
@@ -364,4 +363,4 @@ setmetatable(inspect, {
 		return inspect.inspect(root, options)
 	end,
 })
-gsharer.inspect = inspect
+return inspect

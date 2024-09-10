@@ -3,6 +3,10 @@
 gsharer = {}
 gsharer.json = {}
 
+--- The loader used to load lua modules that are embedded in the gsharer binary.
+---@param modname string Stringified JSON data.
+function gsharer._embedded_loader(modname) end
+
 ---@param str string Stringified JSON data.
 ---@return any
 function gsharer.json.decode(str, opts) end
@@ -18,9 +22,10 @@ function gsharer.json.encode(obj) end
 ---@return string
 function gsharer.inspect(root, options) end
 
---- @see |gsharer.inspect()|
+--- Prints the lua object to stdout.
+--- @see gsharer.inspect()
 --- @param ... any
---- @return any # given arguments.
+--- @return any
 function gsharer.print(...) end
 
 --- Gets an option from environment variables or from a lua global.
@@ -38,7 +43,7 @@ local Request = {
 	URL = "https://example.com",
 	file_form_name = "fileToUpload",
 	arguments = {
-		userhash = gsharer.option("CATBOX_USERHASH"),
+		userhash = gsharer.option("DESTINATION_USERHASH"),
 		reqtype = "fileupload",
 	},
 }

@@ -148,6 +148,9 @@ func main() {
 					},
 				},
 				Action: func(cCtx *cli.Context) error {
+					if cCtx.Bool("interactive") {
+						os.Setenv("GSHARER_INTERACTIVE", "1")
+					}
 					nArg := cCtx.NArg()
 					if nArg > 0 {
 						// Upload files from args.

@@ -369,4 +369,4 @@ function json.decode(str)
 	return res
 end
 
-gsharer.json = json
+return json
