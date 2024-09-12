@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/aarzilli/golua/lua"
 	"github.com/adrg/xdg"
+	"github.com/h2non/filetype"
 	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
 )
@@ -69,12 +69,13 @@ func prependError(err error, prefixes ...string) error {
 }
 
 func main() {
+	logger := slog.New(GsharerLogHandler{})
+	slog.SetDefault(logger)
 	ConfigFilePath, err := xdg.SearchConfigFile("gsharer/main.lua")
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err.Error())
+		os.Exit(2)
 	}
-	gsLogger := slog.New(GsharerLogHandler{})
-	slog.SetDefault(gsLogger)
 	app := &cli.App{
 		Flags: []cli.Flag{
 			&cli.IntFlag{
@@ -201,12 +202,12 @@ func main() {
 									return err
 								}
 								defer worker.Close()
-								defer fmt.Printf("worker %d done", i)
+								defer logger.Info("worker %d done", i)
 
 								for uploadJob := range queue {
 									url, err := worker.Upload(uploadJob)
 									if err != nil {
-										fmt.Println(err)
+										logger.Error(err.Error())
 										continue
 									}
 									fmt.Println(url)
@@ -215,37 +216,37 @@ func main() {
 							}()
 						}
 
-						// push the jobs into the queue and close it for the workers
+						// push the jobs into the queue
 						for _, job := range uploadJobs {
 							queue <- job
 						}
 						close(queue)
 					} else {
 						// upload via stdin
-						fmt.Println("Reading from stdin...")
-						destination := cCtx.String("")
-						if destination == "" {
-							return errors.New("When uploading from stdin, a filename needs to be specified.")
-						}
 						worker, err := newWorker()
 						if err != nil {
 							return err
 						}
 						defer worker.Close()
+
+						logger.Info("Reading from stdin...")
+						name := cCtx.String("name")
 						job, err := CreateJob(worker.L, cCtx.String("destination"),
 							[]NamedStream{
 								{
 									ReadCloser: os.Stdin,
-									name:       cCtx.String("name"),
+									name:       name,
 								},
 							})
 						if err != nil {
 							return err
 						}
+
 						url, err := worker.Upload(job)
 						if err != nil {
 							return err
 						}
+
 						fmt.Println(url)
 					}
 					return nil
@@ -255,7 +256,7 @@ func main() {
 				Name:  "sync",
 				Usage: "sync with a server",
 				Action: func(cCtx *cli.Context) error {
-					slog.Error("Not functional, but u can look at this progress bar!")
+					logger.Error("Not functional, but u can look at this progress bar!")
 					bar := progressbar.Default(100)
 					for i := 0; i < 100; i++ {
 						bar.Add(1)
@@ -282,7 +283,8 @@ func main() {
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(prependError(err, "[gsharer]"))
+		slog.Error(prependError(err, "[gsharer]").Error())
+		os.Exit(1)
 	}
 }
 
@@ -443,9 +445,7 @@ func (worker *Worker) ParseResponse(response *http.Response, pushResHandler func
 
 	defer response.Body.Close()
 	if pushResHandler == nil {
-		pushResHandler = func(L *lua.State) error {
-			return L.DoString("return function(str) return str end")
-		}
+		return "", errors.New("pushResHandler null")
 	}
 	pushResHandler(worker.L)
 	worker.L.PushString(string(body))
