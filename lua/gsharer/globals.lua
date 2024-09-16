@@ -18,14 +18,13 @@ function gsharer.print(...)
 	return ...
 end
 
----@return gsharer.Destination
 function gsharer.auto(file_info)
 	return require("gsharer.destinations.litterbox.file")
 end
 
 function gsharer.option(name, default)
 	if os.getenv("GSHARER_INTERACTIVE") and os.getenv("GSHARER_INTERACTIVE") ~= "0" then
-		io.write(string.format("Input the value for option %s (default %s): ", name, default))
+		io.stderr:write(string.format("Input the value for option %s (default %s): ", name, default))
 		local line = io.read()
 		return line
 	else
