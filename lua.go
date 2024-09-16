@@ -37,6 +37,17 @@ func initLuaState() (*lua.State, error) {
 			filename = filepath.Join("lua", strings.ReplaceAll(modname, ".", "/")+"/init.lua")
 			luaErr = loadEmbeddedFile(L1, filename)
 		}
+
+		lastPanicF := L.AtPanic(nil)
+		L.AtPanic(func(L1 *lua.State) int {
+			if lastPanicF != nil {
+				panicCode := lastPanicF(L1)
+				fmt.Printf("[gsharer lua panic] %v\n", panicCode)
+				return lastPanicF(L1)
+			}
+			fmt.Println("no previous panic function")
+			return 1
+		})
 		if luaErr != 0 {
 			// if verboseLogging {
 			// 	fmt.Printf("[embedded lua loader] could not load module %s (searched for file %s)\n", modname, filename)

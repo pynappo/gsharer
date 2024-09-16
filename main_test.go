@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -71,6 +73,28 @@ func TestUploadToLitterbox(t *testing.T) {
 	url, err := worker.Upload(job)
 	if err != nil {
 		t.Error(err)
+	}
+	t.Log("url", url)
+}
+
+func TestLocalUpload(t *testing.T) {
+	echoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		fmt.Fprintf(w, string(body))
+	}))
+	worker, err := newWorker()
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+	err := worker.L.DoString()
+	job := CreateJob(worker.L, "auto")
+	worker.Upload(&UploadJob{
+		request: &http.Request{},
+	})
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
 	}
 	t.Log("url", url)
 }

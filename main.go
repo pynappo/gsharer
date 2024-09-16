@@ -18,7 +18,7 @@ import (
 
 	"github.com/aarzilli/golua/lua"
 	"github.com/adrg/xdg"
-	"github.com/h2non/filetype"
+	// "github.com/h2non/filetype"
 	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
 )
@@ -202,7 +202,7 @@ func main() {
 									return err
 								}
 								defer worker.Close()
-								defer logger.Info("worker %d done", i)
+								defer logger.Info(fmt.Sprintf("worker %d done", i))
 
 								for uploadJob := range queue {
 									url, err := worker.Upload(uploadJob)
@@ -386,6 +386,7 @@ func CreateJob(L *lua.State, destination string, streams []NamedStream) (job *Up
 		return L.DoString("return function(str) return str end")
 	})
 
+	fmt.Println(job.pushResHandler)
 	// create the actual request
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
