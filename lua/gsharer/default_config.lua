@@ -1,3 +1,4 @@
+---@type gsharer.UserConfiguration
 return {
 	router = gsharer.auto,
 	auto_filename = function()
