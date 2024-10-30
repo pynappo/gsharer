@@ -6,8 +6,9 @@ require (
 	github.com/aarzilli/golua v0.0.0-20210507130708-11106aa57765
 	github.com/adrg/xdg v0.5.0
 	github.com/go-test/deep v1.1.1
-	github.com/h2non/filetype v1.1.3
+	github.com/lmittmann/tint v1.0.5
 	github.com/schollz/progressbar/v3 v3.14.4
+	github.com/stevedonovan/luar v0.0.0-20170518170841-22d247e53660
 	github.com/urfave/cli/v2 v2.27.3
 )
 

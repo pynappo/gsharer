@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/aarzilli/golua/lua"
+	"github.com/stevedonovan/luar"
 )
 
 //go:embed lua

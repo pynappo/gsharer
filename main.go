@@ -18,6 +18,7 @@ import (
 
 	"github.com/aarzilli/golua/lua"
 	"github.com/adrg/xdg"
+	"github.com/lmittmann/tint"
 	// "github.com/h2non/filetype"
 	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
@@ -46,9 +47,10 @@ type UploadJob struct {
 type Worker struct {
 	L          *lua.State
 	httpClient *http.Client
+	logger     *slog.Logger
 }
 
-func newWorker() (*Worker, error) {
+func newWorker(logger *slog.Logger) (*Worker, error) {
 	L, err := initLuaState()
 	if err != nil {
 		return nil, err
@@ -56,16 +58,26 @@ func newWorker() (*Worker, error) {
 	return &Worker{
 		L:          L,
 		httpClient: &http.Client{},
+		logger:     logger,
+	}, nil
+}
+
+func newSingleWorker() (*Worker, error) {
+	logger := slog.New()
+	L, err := initLuaState()
+	if err != nil {
+		return nil, err
+	}
+	return &Worker{
+		L:          L,
+		httpClient: &http.Client{},
+		logger:     logger,
 	}, nil
 }
 
 func (worker *Worker) Close() {
 	worker.L.Close()
 	worker.httpClient.CloseIdleConnections()
-}
-
-func prependError(err error, prefixes ...string) error {
-	return fmt.Errorf(strings.Join(prefixes, " ")+" %w", err)
 }
 
 func main() {
@@ -197,7 +209,7 @@ func main() {
 							go func() error {
 								defer wg.Done()
 
-								worker, err := newWorker()
+								worker, err := newWorker(logger.With(slog.Int("workerNumber", i)))
 								if err != nil {
 									return err
 								}
@@ -223,7 +235,7 @@ func main() {
 						close(queue)
 					} else {
 						// upload via stdin
-						worker, err := newWorker()
+						worker, err := newWorker(logger.With(slog.Int("number", 0)))
 						if err != nil {
 							return err
 						}
@@ -283,7 +295,7 @@ func main() {
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
-		slog.Error(prependError(err, "[gsharer]").Error())
+		slog.Error(fmt.Errorf("[gsharer], %v", err).Error())
 		os.Exit(1)
 	}
 }
@@ -320,12 +332,12 @@ func (worker *Worker) Upload(job *UploadJob) (url string, err error) {
 	job.request.Body = &reader
 	res, err := worker.httpClient.Do(job.request)
 	if err != nil {
-		err = prependError(err, "error making request:")
+		err = fmt.Errorf("error making request, %v", err)
 		return
 	}
 	url, err = worker.ParseResponse(res, job.pushResHandler)
 	if err != nil {
-		err = prependError(err, "error parsing response:")
+		err = fmt.Errorf("error parsing response, %v", err)
 		return
 	}
 	return
@@ -452,7 +464,7 @@ func (worker *Worker) ParseResponse(response *http.Response, pushResHandler func
 	worker.L.PushString(string(body))
 	err = worker.L.Call(1, 1)
 	if err != nil {
-		err = prependError(err, "could not call response handler from lua,")
+		err = errors.New(fmt.Sprintf("could not call response handler from lua, %v", err))
 		return "", err
 	}
 	url := worker.L.ToString(-1)
