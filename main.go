@@ -464,7 +464,7 @@ func (worker *Worker) ParseResponse(response *http.Response, pushResHandler func
 	worker.L.PushString(string(body))
 	err = worker.L.Call(1, 1)
 	if err != nil {
-		err = errors.New(fmt.Sprintf("could not call response handler from lua, %v", err))
+		err = fmt.Errorf("could not call response handler from lua, %v", err)
 		return "", err
 	}
 	url := worker.L.ToString(-1)
