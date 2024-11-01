@@ -18,7 +18,7 @@ import (
 var luaLibraries embed.FS
 
 func initLuaState() (*lua.State, error) {
-	L := lua.NewState()
+	L := luar.Init()
 	L.OpenLibs()
 	// create the gsharer global table
 	err := doEmbeddedFile(L, "lua/gsharer/init.lua")

@@ -7,6 +7,7 @@ require (
 	github.com/adrg/xdg v0.5.0
 	github.com/go-test/deep v1.1.1
 	github.com/lmittmann/tint v1.0.5
+	github.com/mattn/go-colorable v0.1.13
 	github.com/schollz/progressbar/v3 v3.14.4
 	github.com/stevedonovan/luar v0.0.0-20170518170841-22d247e53660
 	github.com/urfave/cli/v2 v2.27.3
@@ -14,6 +15,7 @@ require (
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

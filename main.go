@@ -13,12 +13,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
+	"time"
 
 	"github.com/aarzilli/golua/lua"
 	"github.com/adrg/xdg"
-	"github.com/lmittmann/tint"
+
 	// "github.com/h2non/filetype"
 	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
@@ -50,7 +50,7 @@ type Worker struct {
 	logger     *slog.Logger
 }
 
-func newWorker(logger *slog.Logger) (*Worker, error) {
+func newWorker() (*Worker, error) {
 	L, err := initLuaState()
 	if err != nil {
 		return nil, err
@@ -58,20 +58,6 @@ func newWorker(logger *slog.Logger) (*Worker, error) {
 	return &Worker{
 		L:          L,
 		httpClient: &http.Client{},
-		logger:     logger,
-	}, nil
-}
-
-func newSingleWorker() (*Worker, error) {
-	logger := slog.New()
-	L, err := initLuaState()
-	if err != nil {
-		return nil, err
-	}
-	return &Worker{
-		L:          L,
-		httpClient: &http.Client{},
-		logger:     logger,
 	}, nil
 }
 
@@ -81,11 +67,10 @@ func (worker *Worker) Close() {
 }
 
 func main() {
-	logger := slog.New(GsharerLogHandler{})
-	slog.SetDefault(logger)
+	slog.SetDefault(GsharerLogger())
 	ConfigFilePath, err := xdg.SearchConfigFile("gsharer/main.lua")
 	if err != nil {
-		logger.Error(err.Error())
+		slog.Error(err.Error())
 		os.Exit(2)
 	}
 	app := &cli.App{
@@ -366,37 +351,10 @@ func CreateJob(L *lua.State, destination string, streams []NamedStream) (job *Up
 		return
 	}
 
-	// TODO: maybe just send a go struct, JSON, or access the lua table instead LOL
 	printStack(L)
-	params, err := luaTableToStringMap(L, -1)
 	if err != nil {
 		return
 	}
-
-	_, err = nestedGet(params, []string{"name"}, destination)
-	if err != nil {
-		return
-	}
-	reqParams, err := nestedGet(params, []string{"request"}, make(map[string]interface{}))
-	if err != nil {
-		return
-	}
-	reqMethod, err := nestedGet(reqParams, []string{"method"}, "POST")
-	if err != nil {
-		return
-	}
-	reqURL, err := nestedGet(reqParams, []string{"URL"}, "")
-	if err != nil {
-		return
-	}
-	reqFileFormName, err := nestedGet(reqParams, []string{"file_form_name"}, "")
-	if err != nil {
-		return
-	}
-	reqArgs, err := nestedGet(reqParams, []string{"arguments"}, make(map[string]interface{}))
-	job.pushResHandler, err = nestedGet(params, []string{"response"}, func(L *lua.State) error {
-		return L.DoString("return function(str) return str end")
-	})
 
 	fmt.Println(job.pushResHandler)
 	// create the actual request
@@ -427,24 +385,6 @@ func CreateJob(L *lua.State, destination string, streams []NamedStream) (job *Up
 	}
 	job.request.Header.Add("Content-Type", writer.FormDataContentType())
 	return
-}
-
-func nestedGet[V string | int | interface{}](m map[string]interface{}, keys []string, fallback V) (V, error) {
-	if len(keys) == 0 {
-		return fallback, nil
-	}
-	val, ok := m[keys[0]]
-	if !ok {
-		return fallback, errors.New("could not find value for key " + keys[0])
-	}
-	if len(keys) == 1 {
-		castedVal, ok := val.(V)
-		if !ok {
-			return fallback, errors.New("Value for key " + keys[0] + "was not of the expected type")
-		}
-		return castedVal, nil
-	}
-	return nestedGet(val.(map[string]interface{}), keys[1:], fallback)
 }
 
 func (worker *Worker) ParseResponse(response *http.Response, pushResHandler func(L *lua.State) error) (string, error) {
